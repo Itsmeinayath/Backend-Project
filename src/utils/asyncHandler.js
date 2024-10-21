@@ -1,8 +1,9 @@
 // we can use this as a middleware . what is this middleware?.middleware is a function that takes three arguments, req, res, next.
 // why are we using this middleware? to handle the errors in the async functions.
 const asyncHandler = (requestHandler) => {
-    (req,res,next) => {
-        Promise.resolve(requestHandler(req,res,next)).catch((err) => next(err))
+   return (req,res,next) => {
+        Promise.resolve(requestHandler(req,res,next)).catch((err) => next(err)).catch
+        ((err) => next(err));
     }
 }
  
