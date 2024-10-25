@@ -7,12 +7,44 @@ import mongooseAggregatePaginate from "mongoose-aggregate-paginate-v2";
 // Defining the schema for the Video model
 const videoSchema = new Schema(
   {
-    // Add your schema fields here
+    videoFile: {
+      type: String, //cloudinary url
+      required: true
   },
-  {
-    // Enabling timestamps to automatically add createdAt and updatedAt fields
-    timestamps: true
+  thumbnail: {
+      type: String, //cloudinary url
+      required: true
+  },
+  title: {
+      type: String, 
+      required: true
+  },
+  description: {
+      type: String, 
+      required: true
+  },
+  duration: {
+      type: Number, 
+      required: true
+  },
+  views: {
+      type: Number,
+      default: 0
+  },
+  isPublished: {
+      type: Boolean,
+      default: true
+  },
+  owner: {
+      type: Schema.Types.ObjectId,
+      ref: "User"
   }
+
+}, 
+{
+  timestamps: true
+}
+  
 );
 
 // Adding pagination plugin to the schema
