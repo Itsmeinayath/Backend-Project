@@ -4,8 +4,6 @@ import { User } from "../models/user.model.js";
 import { uploadOnCloudinary } from "../utils/cloudinary.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import jwt from "jsonwebtoken";
-import { is } from "@react-three/fiber/dist/declarations/src/core/utils.js";
-import { cover } from "three/src/extras/TextureUtils.js";
 import mongoose from "mongoose";
 
 
@@ -14,11 +12,11 @@ const generateAccessAndRefreshToken = async (userId) => {
     try {
         const user = await User.findById(userId);
         const accessToken = user.generateAccessToken();
-        const refershToken = user.generateRefreshToken();
+        const refreshToken = user.generateRefreshToken();
 
-        user.refreshToken = refershToken;
+        user.refreshToken = refreshToken;
         await user.save({ validateBeforeSave: false });
-        return { accessToken, refershToken };
+        return { accessToken, refreshToken };
     }
     catch (err) {
         throw new ApiError(500, "Failed to generate access and refresh tokens");
@@ -139,7 +137,7 @@ const loginUser = asyncHandler(async (req, res) => {
     }
 
     // Generate access and refresh tokens
-    const { accessToken, refershToken } = await generateAccessAndRefreshToken(user._id);
+    const { accessToken, refreshToken } = await generateAccessAndRefreshToken(user._id);
 
     // Find the user by ID and exclude password and refreshToken fields
     const loggedUser = await User.findById(user._id).select("-password -refreshToken");
@@ -154,12 +152,12 @@ const loginUser = asyncHandler(async (req, res) => {
     return res
         .status(200)
         .cookie("accessToken", accessToken, options)
-        .cookie("refreshToken", refershToken, options)
+        .cookie("refreshToken", refreshToken, options)
         .json(
             new ApiResponse(
                 200,
                 {
-                    user: loggedUser, accessToken, refershToken
+                    user: loggedUser, accessToken, refreshToken
                 },
                 "User logged in successfully"
             )
@@ -173,7 +171,9 @@ const logoutUser = asyncHandler(async (req, res) => {
     await User.findByIdAndUpdate(
         req.user._id,
         {
-            $set: { refreshToken: undefined }
+            $set: {
+                refreshToken: 1
+            }
         },
         {
             new: true,
@@ -197,38 +197,38 @@ const logoutUser = asyncHandler(async (req, res) => {
 // ************************************************************************************************************************
 
 const refreshAccessToken = asyncHandler(async (req, res) => {
-    const incomingRefershToken = req.cookie.refershToken || req.body.refershToken
+    const incomingRefreshToken = req.cookie.refreshToken || req.body.refreshToken
 
-    if (!incomingRefershToken) {
+    if (!incomingRefreshToken) {
         throw new ApiError(401, "Unauthorized request. Refresh token is required")
     }
 
 
     try {
-        const decodedToken = jwt.verify(incomingRefershToken, process.env.REFRESH_TOKEN_SECRET)
+        const decodedToken = jwt.verify(incomingRefreshToken, process.env.REFRESH_TOKEN_SECRET)
         const user = await User.findById(decodedToken?._id)
 
         if (!user) {
             throw new ApiError(401, "Invalid refresh token")
         }
 
-        if (incomingRefershToken !== user?.refreshToken) {
+        if (incomingRefreshToken !== user?.refreshToken) {
             throw new ApiError(401, "Refresh token is expired or used")
         }
         const options = {
             httpOnly: true,
             secure: true
         }
-        const { accessToken, newRefershToken } = await generateAccessAndRefreshToken(user._id)
+        const { accessToken, newRereshToken } = await generateAccessAndRefreshToken(user._id)
         return res.status(200)
             .cookie("accessToken", accessToken, options)
-            .cookie("refreshToken", newRefershToken, options)
+            .cookie("refreshToken", newRereshToken, options)
             .json(
                 new ApiResponse(
                     200,
                     {
                         accessToken,
-                        refreshToken: newRefershToken
+                        refreshToken: newRereshToken
                     },
                     "Access token refreshed successfully"
                 )
@@ -262,7 +262,7 @@ const changeCurrentPassword = asyncHandler(async (req, res) => {
             "Password changed successfully"
         )
     )
-})
+});
 // ************************************************************************************************************************
 
 // here we writinh endpoints for getting current user
